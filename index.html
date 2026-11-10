@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Modos TE/TM · Guía de onda rectangular</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <header><h1>MODOS <span>TE / TM</span></h1><small>// guía de onda rectangular · propagación en 3D, sección y corte</small></header>
@@ -47,8 +47,118 @@
       <section class="panel"><h2>Sección x–y <i>· cian −, magenta +</i></h2><canvas id="c1"></canvas></section>
       <section class="panel"><h2>Corte z–x <i>· onda hacia +z</i></h2><canvas id="c2"></canvas></section>
     </div>
+    <section class="panel" id="teoria">
+      <h2>Teoría paso a paso <i>· toca cada tarjeta para abrirla</i></h2>
+      <div class="theory">
+
+      <details open class="full"><summary>0 · Resumen: qué se hizo</summary>
+        <p>Partimos de las ecuaciones de la pizarra. Modo TE (E<sub>z</sub> = 0): H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup>. Modo TM (H<sub>z</sub> = 0): E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup>. El programa hace cuatro cosas:</p>
+        <ol><li>Calcula las constantes del modo: k<sub>x</sub>, k<sub>y</sub>, k<sub>c</sub>, f<sub>c</sub>, β y λ<sub>g</sub>.</li>
+        <li>Evalúa el patrón espacial del campo en una malla de puntos de la guía.</li>
+        <li>Multiplica por el factor de propagación y de tiempo, cos(ωt − βz).</li>
+        <li>Convierte el valor (entre −1 y 1) en color y lo dibuja en 3D, en la sección x–y y en el corte z–x.</li></ol>
+      </details>
+
+      <details open><summary>1 · Geometría y suposiciones</summary>
+        <ul><li>Guía rectangular de lados a (eje x, 0 ≤ x ≤ a) y b (eje y, 0 ≤ y ≤ b). La onda viaja en z.</li>
+        <li>Paredes de conductor perfecto: el campo eléctrico tangencial a la pared vale cero.</li>
+        <li>Interior vacío (ε₀, μ₀) y sin fuentes (sin cargas ni corrientes).</li>
+        <li>Régimen senoidal: todo depende de e<sup>jωt</sup>, y en z de e<sup>−γz</sup>.</li></ul>
+      </details>
+
+      <details><summary>2 · Ecuación de onda (Helmholtz)</summary>
+        <p>Maxwell sin fuentes con e<sup>jωt</sup>:</p>
+        <p class="eq">∇×E = −jωμH &nbsp; ∇×H = jωεE</p>
+        <p>Tomando el rotacional de una y sustituyendo la otra:</p>
+        <p class="eq">∇²ψ + k²ψ = 0, &nbsp; k = ω√(με) = ω/c = 2π/λ</p>
+        <p>Con dependencia e<sup>−γz</sup>, la derivada ∂²/∂z² se vuelve γ². Para la componente longitudinal ψ (H<sub>z</sub> o E<sub>z</sub>):</p>
+        <p class="eq">∂²ψ/∂x² + ∂²ψ/∂y² + (γ² + k²) ψ = 0</p>
+        <p>Se define el número de onda de corte: <b>k<sub>c</sub>² = γ² + k²</b>.</p>
+      </details>
+
+      <details><summary>3 · Modo TE: separación de variables</summary>
+        <p>En TE, E<sub>z</sub> = 0 y la incógnita es H<sub>z</sub>. Proponemos H<sub>z</sub> = X(x)·Y(y)·e<sup>−γz</sup>. Sustituyendo y dividiendo entre XY:</p>
+        <p class="eq">X″/X + Y″/Y + k<sub>c</sub>² = 0</p>
+        <p>Cada término depende de una sola variable, así que cada uno es constante:</p>
+        <p class="eq">X″ = −k<sub>x</sub>² X, &nbsp; Y″ = −k<sub>y</sub>² Y, &nbsp; k<sub>x</sub>² + k<sub>y</sub>² = k<sub>c</sub>²</p>
+        <p>Soluciones: X = A cos(k<sub>x</sub>x) + B sen(k<sub>x</sub>x), y lo mismo para Y.</p>
+      </details>
+
+      <details><summary>4 · Modo TE: condiciones de frontera</summary>
+        <p>El campo eléctrico tangencial debe anularse en las paredes. Con las ecuaciones de Maxwell, E<sub>y</sub> ∝ ∂H<sub>z</sub>/∂x y E<sub>x</sub> ∝ ∂H<sub>z</sub>/∂y. Entonces:</p>
+        <p class="eq">X′(0) = X′(a) = 0, &nbsp; Y′(0) = Y′(b) = 0</p>
+        <p>X′ = −k<sub>x</sub>A sen(k<sub>x</sub>x) + k<sub>x</sub>B cos(k<sub>x</sub>x). Con X′(0) = 0 sale B = 0 (queda coseno). Con X′(a) = 0 se necesita sen(k<sub>x</sub>a) = 0, o sea:</p>
+        <p class="eq">k<sub>x</sub> = nπ/a, &nbsp; k<sub>y</sub> = mπ/b, &nbsp; n, m = 0, 1, 2, …</p>
+        <p class="eq">H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b) e<sup>−γz</sup></p>
+        <p>n = 0 o m = 0 sí está permitido (el coseno vale 1, no es solución trivial), pero no ambos a la vez, porque H<sub>z</sub> sería constante y no habría campo transversal.</p>
+      </details>
+
+      <details><summary>5 · Modo TM</summary>
+        <p>En TM, H<sub>z</sub> = 0 y la incógnita es E<sub>z</sub> = X·Y·e<sup>−γz</sup>. La separación es idéntica, pero ahora E<sub>z</sub> es tangencial a las paredes, así que:</p>
+        <p class="eq">E<sub>z</sub> = 0 en x = 0, a y en y = 0, b ⇒ X(0) = X(a) = 0, Y(0) = Y(b) = 0</p>
+        <p>X(0) = 0 elimina el coseno (queda seno), y X(a) = 0 da k<sub>x</sub> = nπ/a. Igual para y:</p>
+        <p class="eq">E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b) e<sup>−γz</sup>, &nbsp; n, m = 1, 2, 3, …</p>
+        <p>Aquí n = 0 o m = 0 da E<sub>z</sub> ≡ 0, por eso en TM se empieza en 1. El primer modo TM es TM11.</p>
+      </details>
+
+      <details><summary>6 · Frecuencia de corte, β y λ<sub>g</sub></summary>
+        <p>De k<sub>c</sub>² = γ² + k² y k<sub>c</sub>² = (nπ/a)² + (mπ/b)²:</p>
+        <p class="eq">γ² = k<sub>c</sub>² − k²</p>
+        <ul><li>Si k &gt; k<sub>c</sub>: γ = jβ, hay propagación.</li>
+        <li>Si k &lt; k<sub>c</sub>: γ = α real, la onda decae (evanescente).</li></ul>
+        <p>El límite es k = k<sub>c</sub>, que da la frecuencia de corte:</p>
+        <p class="eq">f<sub>c</sub> = c·k<sub>c</sub>/(2π) = (c/2)·√((n/a)² + (m/b)²)</p>
+        <p class="eq">β = √(k² − k<sub>c</sub>²) = k·√(1 − (f<sub>c</sub>/f)²), &nbsp; λ<sub>g</sub> = 2π/β = λ/√(1 − (f<sub>c</sub>/f)²)</p>
+        <p>λ<sub>g</sub> siempre es mayor que λ. El modo dominante (menor f<sub>c</sub>) es TE10 cuando a &gt; b. La razón f/f<sub>c</sub> del panel debe ser mayor que 1.</p>
+      </details>
+
+      <details><summary>7 · Campos transversales (las flechas)</summary>
+        <p>De Maxwell, todos los campos transversales salen de la componente longitudinal:</p>
+        <p class="eq">TE: E<sub>t</sub> = −(jωμ/k<sub>c</sub>²) ẑ × ∇<sub>t</sub>H<sub>z</sub></p>
+        <p class="eq">TM: E<sub>t</sub> = −(γ/k<sub>c</sub>²) ∇<sub>t</sub>E<sub>z</sub></p>
+        <p>Derivando H<sub>z</sub> y E<sub>z</sub> (salvo constantes):</p>
+        <p class="eq">TE: E<sub>x</sub> ∝ (mπ/b) cos(nπx/a) sen(mπy/b), &nbsp; E<sub>y</sub> ∝ −(nπ/a) sen(nπx/a) cos(mπy/b)</p>
+        <p class="eq">TM: E<sub>x</sub> ∝ (nπ/a) cos(nπx/a) sen(mπy/b), &nbsp; E<sub>y</sub> ∝ (mπ/b) sen(nπx/a) cos(mπy/b)</p>
+        <p>El programa divide entre k<sub>c</sub> para que la flecha más larga mida 1, y las multiplica por sen(ωt − βz): el factor j significa que E<sub>t</sub> va desfasado 90° respecto a H<sub>z</sub> o E<sub>z</sub>.</p>
+      </details>
+
+      <details><summary>8 · Del fasor a la animación</summary>
+        <p>El campo real es la parte real del fasor. Con γ = jβ:</p>
+        <p class="eq">H<sub>z</sub>(x,y,z,t) = Re{H₀ cos(nπx/a) cos(mπy/b) e<sup>j(ωt − βz)</sup>} = H₀ cos(nπx/a) cos(mπy/b) cos(ωt − βz)</p>
+        <ul><li>El patrón en x e y es fijo (estacionario); solo la parte cos(ωt − βz) se mueve.</li>
+        <li>Los máximos cumplen ωt − βz = constante, así que avanzan con velocidad de fase v<sub>p</sub> = ω/β (mayor que c).</li>
+        <li><b>Sección x–y:</b> z = z₀ fijo, el patrón respira con cos(ωt − βz₀).</li>
+        <li><b>Corte z–x:</b> y = y₀ fijo, se ve el patrón de x multiplicado por una onda que viaja en z.</li>
+        <li>En el código, <code>phase</code> es ωt y crece con el tiempo.</li></ul>
+      </details>
+
+      <details><summary>9 · Qué hace el código, paso a paso</summary>
+        <ol><li><code>params()</code> lee a, b, n, m y f/f<sub>c</sub>, y calcula k<sub>x</sub>, k<sub>y</sub>, k<sub>c</sub>, f<sub>c</sub>, f, k, β y λ<sub>g</sub>.</li>
+        <li>Revisa que el modo exista (TE: no n = m = 0; TM: n, m ≥ 1).</li>
+        <li>Define la escala en píxeles por mm y guarda en una malla el patrón <code>scalar(x,y)</code>, el cos·cos o sen·sen.</li>
+        <li>En cada cuadro suma al tiempo, multiplica la malla por cos(ωt − βz) y lo convierte en color: cian negativo, oscuro cero, magenta positivo.</li>
+        <li>Dibuja la sección, el corte y la vista 3D (esas imágenes se pegan sobre planos con una transformación afín). Después dibuja paredes, cotas y flechas.</li></ol>
+      </details>
+
+      <details><summary>10 · Ejemplo numérico: guía WR-90 (a = 22.86 mm, b = 10.16 mm), f = 1.5 f<sub>c</sub></summary>
+        <p><b>TE10</b> (n = 1, m = 0)</p>
+        <p class="eq">k<sub>c</sub> = π/a = 137.4 rad/m<br>f<sub>c</sub> = c/(2a) = 6.557 GHz<br>f = 1.5·f<sub>c</sub> = 9.836 GHz<br>β = k<sub>c</sub>√(1.5² − 1) = 153.7 rad/m<br>λ<sub>g</sub> = 2π/β = 40.9 mm</p>
+        <p><b>TE21</b> (n = 2, m = 1)</p>
+        <p class="eq">k<sub>x</sub> = 2π/a = 274.9 rad/m, k<sub>y</sub> = π/b = 309.2 rad/m<br>k<sub>c</sub> = √(274.9² + 309.2²) = 413.7 rad/m<br>f<sub>c</sub> = c·k<sub>c</sub>/2π = 19.74 GHz<br>f = 29.6 GHz, β = k<sub>c</sub>√1.25 = 462.5 rad/m<br>λ<sub>g</sub> = 13.6 mm</p>
+      </details>
+
+      <details open><summary>11 · Cálculo en vivo con tus valores actuales</summary>
+        <div id="live"></div>
+      </details>
+
+      <details class="full"><summary>12 · ¿Por qué a veces el corte sale vacío? (nodos del campo)</summary>
+        <p>El corte z–x se hace en y = y₀. En TE21, H<sub>z</sub> ∝ cos(2πx/a) cos(πy/b). Con y₀ = b/2, cos(π/2) = 0, así que H<sub>z</sub> = 0 en todo el plano y no se ve nada. Es un nodo del campo, no un error. Mueve y₀ hacia 0 o 1. Pasa en TE con m impar y en TM con m par. También hay nodos en x: cos(nπx/a) se anula en n posiciones (TE) y sen(nπx/a) en n − 1 posiciones interiores (TM), y esas líneas se ven como franjas oscuras en la sección.</p>
+      </details>
+
+      </div>
+    </section>
   </main>
 </div>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 </body>
 </html>

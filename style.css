@@ -36,3 +36,16 @@ canvas{width:100%;height:auto;display:block;background:#04070f;border-radius:2px
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:900px){.layout{grid-template-columns:1fr}aside{position:static}.grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.two{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}}
+
+.theory{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
+.theory .full{grid-column:1/-1}
+details{background:rgba(0,10,22,.55);border:1px solid rgba(0,229,255,.2);border-left:3px solid var(--cy);border-radius:2px;padding:6px 10px}
+details[open]{border-left-color:var(--mg)}
+summary{cursor:pointer;color:var(--cy);font:500 12px Orbitron,sans-serif;letter-spacing:.05em}
+details p,details li{margin:6px 0;color:var(--tx)}
+details ol,details ul{padding-left:18px;margin:6px 0}
+.eq{font-family:"Share Tech Mono",monospace;background:rgba(0,229,255,.07);border-left:2px solid rgba(0,229,255,.5);padding:4px 8px;overflow-x:auto;color:#fff}
+code{color:var(--mg)}
+#live .eq{margin:3px 0}
+h2 i{font-style:normal}
+@media(max-width:900px){.theory{grid-template-columns:1fr}}

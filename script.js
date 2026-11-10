@@ -36,6 +36,23 @@ function params() {
   $("t-beta").textContent = beta.toFixed(0) + " rad/m"; $("t-lg").textContent = (P.lg * 1000).toFixed(1) + " mm";
   $("err").textContent = valid ? "" : (type === "TE" ? "TE: n y m no pueden ser ambos 0." : "TM: n y m deben ser ≥ 1.");
   $("rv").textContent = (+$("ratio").value).toFixed(2);
+  steps();
+}
+
+function steps() {   // cálculo paso a paso con los valores actuales
+  const {a, b, n, m, A, B, kc, fc, f, beta, lg} = P, k = 2 * Math.PI * f / C;
+  const L = [
+    `k<sub>x</sub> = nπ/a = ${n}·π / ${(a * 1000).toFixed(2)} mm = ${A.toFixed(1)} rad/m`,
+    `k<sub>y</sub> = mπ/b = ${m}·π / ${(b * 1000).toFixed(2)} mm = ${B.toFixed(1)} rad/m`,
+    `k<sub>c</sub> = √(k<sub>x</sub>² + k<sub>y</sub>²) = ${kc.toFixed(1)} rad/m`,
+    `f<sub>c</sub> = c·k<sub>c</sub>/(2π) = ${(fc / 1e9).toFixed(3)} GHz`,
+    `f = (f/f<sub>c</sub>)·f<sub>c</sub> = ${(+$("ratio").value).toFixed(2)} × ${(fc / 1e9).toFixed(3)} = ${(f / 1e9).toFixed(3)} GHz`,
+    `k = 2πf/c = ${k.toFixed(1)} rad/m &nbsp; (λ = ${(C / f * 1000).toFixed(2)} mm)`,
+    `β = √(k² − k<sub>c</sub>²) = ${beta.toFixed(1)} rad/m`,
+    `λ<sub>g</sub> = 2π/β = ${(lg * 1000).toFixed(2)} mm`,
+    `v<sub>p</sub> = ω/β = ${(2 * Math.PI * f / beta / C).toFixed(3)} c`
+  ];
+  $("live").innerHTML = L.map(t => `<p class="eq">${t}</p>`).join("") + (P.valid ? "" : "<p>Este modo no existe: revisa n y m.</p>");
 }
 
 const scalar = (x, y) => P.type === "TE" ? Math.cos(P.A * x) * Math.cos(P.B * y) : Math.sin(P.A * x) * Math.sin(P.B * y);
