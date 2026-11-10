@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modos TE/TM en guía de onda rectangular</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Modos TE / TM en guía de onda rectangular</h1>
+<p class="sub">Se ve la guía como tal: paredes conductoras (gris), dimensiones a y b, campo en la sección transversal (x–y) y propagación en el corte longitudinal (z–x). Ondas con e<sup>j(ωt−βz)</sup>.</p>
+
+<div class="card">
+<div class="ctl">
+<label>Modo (tarea)<select id="preset"></select></label>
+<label>Tipo<select id="type"><option>TE</option><option>TM</option></select></label>
+<label>n<input id="n" type="number" min="0" max="6" value="1"></label>
+<label>m<input id="m" type="number" min="0" max="6" value="0"></label>
+<label>a (mm)<input id="a" type="number" value="22.86" step="0.1"></label>
+<label>b (mm)<input id="b" type="number" value="10.16" step="0.1"></label>
+<label>f / f<sub>c</sub> (&gt;1) <span id="rv">1.5</span><input id="ratio" type="range" min="1.05" max="3" step="0.05" value="1.5"></label>
+<label>Velocidad <input id="spd" type="range" min="0.05" max="1" step="0.05" value="0.25"></label>
+<label>Corte y₀ (corte z–x) <input id="y0" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+<label>Posición z₀ (sección x–y) <input id="z0" type="range" min="0" max="1" step="0.01" value="0"></label>
+<label><span>Vectores E<sub>t</sub></span><input id="vec" type="checkbox" checked style="width:20px;height:20px"></label>
+<label>&nbsp;<button id="play">Pausa</button></label>
+</div>
+</div>
+
+<div class="card">
+<div id="eq"></div>
+<div id="info"></div>
+<div id="err"></div>
+</div>
+
+<div class="card">
+<canvas id="c1" width="490" height="240"></canvas>
+<p class="cap">Sección transversal de la guía en z = z₀. Color: componente longitudinal (H<sub>z</sub> en TE, E<sub>z</sub> en TM); rojo = positivo, azul = negativo. Flechas: campo eléctrico transversal. Línea punteada verde: posición y₀ del corte de abajo.</p>
+</div>
+
+<div class="card">
+<canvas id="c2" width="600" height="280"></canvas>
+<p class="cap">Corte longitudinal en y = y₀ (se ven las paredes x = 0 abajo y x = a arriba). La onda viaja hacia +z; se muestran 2 longitudes de onda guiada λ<sub>g</sub>. Línea punteada verde: posición z₀ de la sección de arriba.</p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
