@@ -3,59 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WAVEGUIDE · Modos TE/TM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Modos TE/TM · Guía de onda rectangular</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
-<header>
-  <div class="eyebrow">// ELECTROMAGNETISMO · GUÍAS DE ONDA RECTANGULARES</div>
-  <h1>MODOS <span>TE / TM</span></h1>
-  <p>Simulador de propagación: vista 3D, sección transversal y corte longitudinal.</p>
-</header>
-<main>
-  <section class="panel">
-    <h2>Panel de control</h2>
-    <div id="pills"></div>
-    <div class="grid">
-      <label>Tipo<select id="type"><option>TE</option><option>TM</option></select></label>
-      <label>n<input id="n" type="number" min="0" max="8" value="1"></label>
-      <label>m<input id="m" type="number" min="0" max="8" value="0"></label>
-      <label>a (mm)<input id="a" type="number" value="22.86" step="0.1" min="1"></label>
-      <label>b (mm)<input id="b" type="number" value="10.16" step="0.1" min="1"></label>
-      <label>f / f<sub>c</sub> <b id="rv">1.50</b><input id="ratio" type="range" min="1.05" max="3" step="0.05" value="1.5"></label>
-      <label>Velocidad<input id="spd" type="range" min="0.05" max="1" step="0.05" value="0.25"></label>
-      <label>Corte y₀<input id="y0" type="range" min="0" max="1" step="0.01" value="0.5"></label>
-      <label>Posición z₀<input id="z0" type="range" min="0" max="1" step="0.01" value="0"></label>
-      <label class="chk"><input id="vec" type="checkbox" checked> Vectores E<sub>t</sub></label>
-      <label class="chk"><input id="fit" type="checkbox"> Zoom automático</label>
-      <label><button id="play">⏸ PAUSA</button></label>
+<header><h1>MODOS <span>TE / TM</span></h1><small>// guía de onda rectangular · propagación en 3D, sección y corte</small></header>
+<div class="layout">
+  <aside>
+    <section class="panel">
+      <h2>Control</h2>
+      <div id="pills"></div>
+      <div class="grid">
+        <label>Tipo<select id="type"><option>TE</option><option>TM</option></select></label>
+        <label>n<input id="n" type="number" min="0" max="8" value="1"></label>
+        <label>m<input id="m" type="number" min="0" max="8" value="0"></label>
+        <label>a (mm)<input id="a" type="number" value="22.86" step="0.1" min="1"></label>
+        <label>b (mm)<input id="b" type="number" value="10.16" step="0.1" min="1"></label>
+        <label>f/f<sub>c</sub> <b id="rv">1.50</b><input id="ratio" type="range" min="1.05" max="3" step="0.05" value="1.5"></label>
+        <label>Velocidad<input id="spd" type="range" min="0.05" max="1" step="0.05" value="0.25"></label>
+        <label>Corte y₀<input id="y0" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+        <label>Posición z₀<input id="z0" type="range" min="0" max="1" step="0.01" value="0"></label>
+        <label class="chk"><input id="vec" type="checkbox" checked>Vectores E<sub>t</sub></label>
+        <label class="chk"><input id="fit" type="checkbox">Zoom auto</label>
+        <button id="play">⏸ PAUSA</button>
+      </div>
+      <p id="err"></p>
+    </section>
+    <section class="panel">
+      <div class="tiles">
+        <div class="tile wide"><small>MODO</small><b id="t-mode">TE10</b></div>
+        <div class="tile"><small>f<sub>c</sub></small><b id="t-fc"></b></div>
+        <div class="tile"><small>f</small><b id="t-f"></b></div>
+        <div class="tile"><small>β</small><b id="t-beta"></b></div>
+        <div class="tile"><small>λ<sub>g</sub></small><b id="t-lg"></b></div>
+      </div>
+      <p id="eq" class="cap"></p>
+    </section>
+  </aside>
+  <main>
+    <section class="panel"><h2>Vista 3D <i>· magenta: sección en z₀ · verde: corte en y₀</i></h2><canvas id="c3" width="700" height="340"></canvas></section>
+    <div class="two">
+      <section class="panel"><h2>Sección x–y <i>· cian −, magenta +</i></h2><canvas id="c1"></canvas></section>
+      <section class="panel"><h2>Corte z–x <i>· onda hacia +z</i></h2><canvas id="c2"></canvas></section>
     </div>
-    <p id="err"></p>
-  </section>
-
-  <section class="tiles">
-    <div class="tile wide"><small>MODO</small><b id="t-mode">TE10</b><span id="eq"></span></div>
-    <div class="tile"><small>f<sub>c</sub> CORTE</small><b id="t-fc"></b></div>
-    <div class="tile"><small>f OPERACIÓN</small><b id="t-f"></b></div>
-    <div class="tile"><small>β</small><b id="t-beta"></b></div>
-    <div class="tile"><small>λ<sub>g</sub></small><b id="t-lg"></b></div>
-  </section>
-
-  <section class="panel">
-    <h2>Vista 3D</h2>
-    <canvas id="c3" width="700" height="340"></canvas>
-    <p class="cap">Guía con 2 λ<sub>g</sub> de longitud. Plano magenta: sección transversal en z₀. Plano verde: corte longitudinal en y₀.</p>
-  </section>
-  <div class="two">
-    <section class="panel"><h2>Sección transversal x–y</h2><canvas id="c1"></canvas>
-      <p class="cap">Cian = negativo · magenta = positivo (H<sub>z</sub> en TE, E<sub>z</sub> en TM). Flechas = E transversal.</p></section>
-    <section class="panel"><h2>Corte longitudinal z–x</h2><canvas id="c2"></canvas>
-      <p class="cap">La onda viaja hacia +z. Pared x = a arriba, x = 0 abajo.</p></section>
-  </div>
-</main>
-<script src="script.js"></script>
+  </main>
+</div>
+<script src="script.js?v=3"></script>
 </body>
 </html>
