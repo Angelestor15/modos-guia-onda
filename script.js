@@ -4,6 +4,9 @@ const OY = 40, WALL = 8, CW = 620, LW = 520, LX = 60;
 let P = {}, phase = 0, playing = true, last = performance.now(), grid = null;
 const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
 let off1 = mk(2, 2), off2 = mk(2, 2);
+// Unidades que se ajustan solas: Hz, kHz, MHz, GHz  ·  nm, µm, mm, m
+const fmtF = v => v >= 1e9 ? (v / 1e9).toFixed(3) + " GHz" : v >= 1e6 ? (v / 1e6).toFixed(3) + " MHz" : v >= 1e3 ? (v / 1e3).toFixed(3) + " kHz" : v.toFixed(1) + " Hz";
+const fmtL = m => m >= 1 ? m.toFixed(2) + " m" : m >= 1e-3 ? (m * 1e3).toFixed(2) + " mm" : m >= 1e-6 ? (m * 1e6).toFixed(2) + " µm" : (m * 1e9).toFixed(1) + " nm";
 
 $("pills").innerHTML = PRE.map(p => `<button class="pill" data-m="${p}">${p}</button>`).join("");
 $("pills").onclick = e => {
@@ -32,8 +35,8 @@ function params() {
   $("t-mode").textContent = `${type}${n}${m}`;
   $("eq").innerHTML = (type === "TE" ? "H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b)" : "E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b)") +
     " · e<sup>−jβz</sup>e<sup>jωt</sup> · " + (type === "TE" ? "E<sub>z</sub>=0" : "H<sub>z</sub>=0");
-  $("t-fc").textContent = (fc / 1e9).toFixed(2) + " GHz"; $("t-f").textContent = (f / 1e9).toFixed(2) + " GHz";
-  $("t-beta").textContent = beta.toFixed(0) + " rad/m"; $("t-lg").textContent = (P.lg * 1000).toFixed(1) + " mm";
+  $("t-fc").textContent = fmtF(fc); $("t-f").textContent = fmtF(f);
+  $("t-beta").textContent = beta.toFixed(0) + " rad/m"; $("t-lg").textContent = fmtL(P.lg);
   $("err").textContent = valid ? "" : (type === "TE" ? "TE: n y m no pueden ser ambos 0." : "TM: n y m deben ser ≥ 1.");
   $("rv").textContent = (+$("ratio").value).toFixed(2);
   steps();
@@ -42,14 +45,14 @@ function params() {
 function steps() {   // cálculo paso a paso con los valores actuales
   const {a, b, n, m, A, B, kc, fc, f, beta, lg} = P, k = 2 * Math.PI * f / C;
   const L = [
-    `k<sub>x</sub> = nπ/a = ${n}·π / ${(a * 1000).toFixed(2)} mm = ${A.toFixed(1)} rad/m`,
-    `k<sub>y</sub> = mπ/b = ${m}·π / ${(b * 1000).toFixed(2)} mm = ${B.toFixed(1)} rad/m`,
+    `k<sub>x</sub> = nπ/a = ${n}·π / ${fmtL(a)} = ${A.toFixed(1)} rad/m`,
+    `k<sub>y</sub> = mπ/b = ${m}·π / ${fmtL(b)} = ${B.toFixed(1)} rad/m`,
     `k<sub>c</sub> = √(k<sub>x</sub>² + k<sub>y</sub>²) = ${kc.toFixed(1)} rad/m`,
-    `f<sub>c</sub> = c·k<sub>c</sub>/(2π) = ${(fc / 1e9).toFixed(3)} GHz`,
-    `f = (f/f<sub>c</sub>)·f<sub>c</sub> = ${(+$("ratio").value).toFixed(2)} × ${(fc / 1e9).toFixed(3)} = ${(f / 1e9).toFixed(3)} GHz`,
-    `k = 2πf/c = ${k.toFixed(1)} rad/m &nbsp; (λ = ${(C / f * 1000).toFixed(2)} mm)`,
+    `f<sub>c</sub> = c·k<sub>c</sub>/(2π) = ${fmtF(fc)}`,
+    `f = (f/f<sub>c</sub>)·f<sub>c</sub> = ${(+$("ratio").value).toFixed(2)} × ${fmtF(fc)} = ${fmtF(f)}`,
+    `k = 2πf/c = ${k.toFixed(1)} rad/m &nbsp; (λ = ${fmtL(C / f)})`,
     `β = √(k² − k<sub>c</sub>²) = ${beta.toFixed(1)} rad/m`,
-    `λ<sub>g</sub> = 2π/β = ${(lg * 1000).toFixed(2)} mm`,
+    `λ<sub>g</sub> = 2π/β = ${fmtL(lg)}`,
     `v<sub>p</sub> = ω/β = ${(2 * Math.PI * f / beta / C).toFixed(3)} c`
   ];
   $("live").innerHTML = L.map(t => `<p class="eq">${t}</p>`).join("") + (P.valid ? "" : "<p>Este modo no existe: revisa n y m.</p>");
@@ -95,7 +98,7 @@ function arrows(x, ox, oy, w, h, sz) {
   }
   x.restore();
 }
-const mm = v => (v * 1000).toFixed(2) + " mm";
+const mm = fmtL;
 
 function view1(z0, y0) {
   const c = $("c1"), x = c.getContext("2d"), {iw: w, ih: h, ox} = P;
@@ -118,7 +121,7 @@ function view2(z0, y0) {
   x.save(); x.setLineDash([6, 4]); x.strokeStyle = "#ff3c96"; x.lineWidth = 1.6;
   const lz = LX + z0 / L * W; x.beginPath(); x.moveTo(lz, OY); x.lineTo(lz, OY + H); x.stroke(); x.restore();
   frame(x, LX, OY, W, H, false); x.font = "12px 'Share Tech Mono',monospace"; x.fillStyle = "#9fdfff";
-  x.textAlign = "left"; x.fillText(`CORTE LONGITUDINAL · y₀ = ${(y0 * 1000).toFixed(2)} mm`, 10, 18);
+  x.textAlign = "left"; x.fillText(`CORTE LONGITUDINAL · y₀ = ${fmtL(y0)}`, 10, 18);
   dim(x, LX, OY + H + 28, LX + W, OY + H + 28, "z →  2λg = " + mm(L), LX + W / 2, OY + H + 46, false);
   dim(x, LX - 30, OY, LX - 30, OY + H, "a = " + mm(P.a), LX - 38, OY + H / 2, true);
 }
