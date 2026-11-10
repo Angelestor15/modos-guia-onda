@@ -49,3 +49,14 @@ code{color:var(--mg)}
 #live .eq{margin:3px 0}
 h2 i{font-style:normal}
 @media(max-width:900px){.theory{grid-template-columns:1fr}}
+
+/* Teoría: fondo sólido y tipografía legible */
+#teoria{background:#0a1424;box-shadow:none}
+#teoria .theory details{background:#0e1c30;border:1px solid #1d3550;border-left:3px solid var(--cy)}
+#teoria .theory details[open]{border-left-color:var(--mg)}
+#teoria summary{font-size:13px;padding:2px 0}
+#teoria details p,#teoria details li{font:15px/1.65 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:#e8f2f9}
+#teoria details li{margin:5px 0}
+#teoria .eq{background:#152a42;border-left:3px solid var(--cy);color:#fff;font:14px/1.7 "Share Tech Mono",ui-monospace,Menlo,monospace;padding:6px 10px}
+#teoria code{background:#152a42;padding:1px 5px;border-radius:2px;color:#ff7ab8}
+#teoria .cn{color:#35e8ff}#teoria .mg{color:#ff5fa8}

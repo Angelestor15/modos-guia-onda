@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Modos TE/TM · Guía de onda rectangular</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header><h1>MODOS <span>TE / TM</span></h1><small>// guía de onda rectangular · propagación en 3D, sección y corte</small></header>
@@ -52,11 +52,22 @@
       <div class="theory">
 
       <details open class="full"><summary>0 · Resumen: qué se hizo</summary>
-        <p>Partimos de las ecuaciones de la pizarra. Modo TE (E<sub>z</sub> = 0): H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup>. Modo TM (H<sub>z</sub> = 0): E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup>. El programa hace cuatro cosas:</p>
+        <p>Este simulador muestra cómo se distribuye y cómo se mueve el campo electromagnético dentro de una guía de onda rectangular. Hay dos familias de modos:</p>
+        <p class="eq">TE (E<sub>z</sub> = 0): &nbsp; H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup> &nbsp; con n, m = 0, 1, 2, …</p>
+        <p class="eq">TM (H<sub>z</sub> = 0): &nbsp; E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b) e<sup>−γz</sup> e<sup>jωt</sup> &nbsp; con n, m = 1, 2, 3, …</p>
+        <p>Las tarjetas de abajo explican de dónde sale cada una de estas ecuaciones y cada número que se calcula. El programa sigue cuatro pasos:</p>
         <ol><li>Calcula las constantes del modo: k<sub>x</sub>, k<sub>y</sub>, k<sub>c</sub>, f<sub>c</sub>, β y λ<sub>g</sub>.</li>
-        <li>Evalúa el patrón espacial del campo en una malla de puntos de la guía.</li>
-        <li>Multiplica por el factor de propagación y de tiempo, cos(ωt − βz).</li>
-        <li>Convierte el valor (entre −1 y 1) en color y lo dibuja en 3D, en la sección x–y y en el corte z–x.</li></ol>
+        <li>Evalúa el patrón del campo en una malla de puntos dentro de la guía.</li>
+        <li>Lo multiplica por el factor de propagación y de tiempo, cos(ωt − βz).</li>
+        <li>Convierte el resultado (un valor entre −1 y 1) en color y lo dibuja en 3D, en la sección x–y y en el corte z–x.</li></ol>
+      </details>
+
+      <details open class="full"><summary>Cómo leer los colores y los dibujos</summary>
+        <ul><li><b class="cn">Cian</b>: el campo es negativo en ese punto. <b class="mg">Magenta</b>: es positivo. Cuanto más intenso el color, mayor es la amplitud.</li>
+        <li><b>Oscuro</b>: el campo vale cero. Las franjas oscuras son los nodos del modo.</li>
+        <li>El color muestra la componente longitudinal: H<sub>z</sub> en TE y E<sub>z</sub> en TM.</li>
+        <li>Las flechas blancas son el campo eléctrico transversal E<sub>t</sub>.</li>
+        <li>Línea verde punteada: posición y₀ del corte. Línea magenta: posición z₀ de la sección.</li></ul>
       </details>
 
       <details open><summary>1 · Geometría y suposiciones</summary>
@@ -159,6 +170,6 @@
     </section>
   </main>
 </div>
-<script src="script.js?v=4"></script>
+<script src="script.js?v=5"></script>
 </body>
 </html>
