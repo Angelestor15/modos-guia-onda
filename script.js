@@ -1,159 +1,149 @@
-const $ = id => document.getElementById(id);
-const C = 299792458;
-const presets = ["TE10","TE21","TM11","TM32","TM21","TE01","TE11","TM12"];
-$("preset").innerHTML = presets.map(p => `<option>${p}</option>`).join("");
-
+const $ = id => document.getElementById(id), C = 299792458;
+const PRE = ["TE10", "TE21", "TM11", "TM32", "TM21", "TE01", "TE11", "TM12"];
+const OY = 40, WALL = 8, CW = 620, LW = 520, LX = 60;
 let P = {}, phase = 0, playing = true, last = performance.now(), grid = null;
-let OX = 56;
-const OY = 34, WALL = 9, OX2 = 56, CW1 = 600;
+const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+let off1 = mk(2, 2), off2 = mk(2, 2);
+
+$("pills").innerHTML = PRE.map(p => `<button class="pill" data-m="${p}">${p}</button>`).join("");
+$("pills").onclick = e => {
+  const m = e.target.dataset.m; if (!m) return;
+  $("type").value = m.slice(0, 2); $("n").value = m[2]; $("m").value = m[3]; params();
+};
 
 function params() {
-  const a = Math.max(+$("a").value, 1) / 1000, b = Math.max(+$("b").value, 1) / 1000;
-  const n = +$("n").value, m = +$("m").value, type = $("type").value;
-  const A = n * Math.PI / a, B = m * Math.PI / b;
-  const kc = Math.hypot(A, B), fc = C * kc / (2 * Math.PI);
-  const f = +$("ratio").value * fc, k = 2 * Math.PI * f / C;
+  const a = Math.max(+$("a").value || 1, 1) / 1000, b = Math.max(+$("b").value || 1, 1) / 1000;
+  const n = Math.max(0, Math.floor(+$("n").value || 0)), m = Math.max(0, Math.floor(+$("m").value || 0)), type = $("type").value;
+  const A = n * Math.PI / a, B = m * Math.PI / b, kc = Math.max(Math.hypot(A, B), 1e-9);
+  const fc = C * kc / (2 * Math.PI), f = +$("ratio").value * fc, k = 2 * Math.PI * f / C;
   const beta = Math.sqrt(Math.max(k * k - kc * kc, 1e-9));
   const valid = type === "TE" ? !(n === 0 && m === 0) : (n >= 1 && m >= 1);
-  P = {a, b, n, m, type, A, B, kc, fc, f, beta, lg: 2 * Math.PI / beta, valid};
-  // Escala fija en px/mm: al cambiar a o b, el rectángulo cambia de tamaño de verdad
-  const s = Math.min(9, 488 / (a * 1000), 400 / (b * 1000));
-  const w = Math.round(a * 1000 * s), h = Math.round(b * 1000 * s);
-  P.iw = w; P.ih = h; P.s = s; P.ox1 = Math.round((CW1 - w) / 2);
-  $("c1").width = CW1; $("c1").height = OY + h + 84;
-  $("c2").width = OX2 + 520 + 34; $("c2").height = OY + w + 84;
+  const fit = Math.min(488 / (a * 1000), 280 / (b * 1000));
+  const s = $("fit").checked ? fit : Math.min(12, fit);
+  const w = Math.max(24, Math.round(a * 1000 * s)), h = Math.max(24, Math.round(b * 1000 * s));
+  P = {a, b, n, m, type, A, B, kc, fc, f, beta, lg: 2 * Math.PI / beta, valid, iw: w, ih: h, s, ox: Math.round((CW - w) / 2)};
+  $("c1").width = CW; $("c1").height = OY + h + 80;
+  $("c2").width = LX + LW + 30; $("c2").height = OY + w + 80;
+  off1 = mk(w, h); off2 = mk(LW, w);
   grid = new Float32Array(w * h);
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++)
     grid[j * w + i] = scalar((i + 0.5) / w * a, (1 - (j + 0.5) / h) * b);
-  const sfx = type === "TE" ? "H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b)" : "E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b)";
-  $("eq").innerHTML = `<b>${type}<sub>${n}${m}</sub></b> &nbsp; ${sfx} · e<sup>−jβz</sup> e<sup>jωt</sup> &nbsp; (${type === "TE" ? "E<sub>z</sub>=0" : "H<sub>z</sub>=0"})`;
-  $("info").textContent = `f_c = ${(fc / 1e9).toFixed(3)} GHz | f = ${(f / 1e9).toFixed(3)} GHz | β = ${beta.toFixed(1)} rad/m | λg = ${(P.lg * 1000).toFixed(1)} mm`;
+  document.querySelectorAll(".pill").forEach(p => p.classList.toggle("on", p.dataset.m === `${type}${n}${m}`));
+  $("t-mode").textContent = `${type}${n}${m}`;
+  $("eq").innerHTML = (type === "TE" ? "H<sub>z</sub> = H₀ cos(nπx/a) cos(mπy/b)" : "E<sub>z</sub> = E₀ sen(nπx/a) sen(mπy/b)") +
+    " · e<sup>−jβz</sup>e<sup>jωt</sup> · " + (type === "TE" ? "E<sub>z</sub>=0" : "H<sub>z</sub>=0");
+  $("t-fc").textContent = (fc / 1e9).toFixed(2) + " GHz"; $("t-f").textContent = (f / 1e9).toFixed(2) + " GHz";
+  $("t-beta").textContent = beta.toFixed(0) + " rad/m"; $("t-lg").textContent = (P.lg * 1000).toFixed(1) + " mm";
   $("err").textContent = valid ? "" : (type === "TE" ? "TE: n y m no pueden ser ambos 0." : "TM: n y m deben ser ≥ 1.");
   $("rv").textContent = (+$("ratio").value).toFixed(2);
 }
 
-function scalar(x, y) {
-  return P.type === "TE" ? Math.cos(P.A * x) * Math.cos(P.B * y) : Math.sin(P.A * x) * Math.sin(P.B * y);
-}
+const scalar = (x, y) => P.type === "TE" ? Math.cos(P.A * x) * Math.cos(P.B * y) : Math.sin(P.A * x) * Math.sin(P.B * y);
 function evec(x, y) {
   const {A, B, kc} = P;
   return P.type === "TE"
     ? [B * Math.cos(A * x) * Math.sin(B * y) / kc, -A * Math.sin(A * x) * Math.cos(B * y) / kc]
     : [A * Math.cos(A * x) * Math.sin(B * y) / kc, B * Math.sin(A * x) * Math.cos(B * y) / kc];
 }
-function color(v) {
-  v = Math.max(-1, Math.min(1, v));
-  return v >= 0 ? [255, 255 * (1 - v), 255 * (1 - v)] : [255 * (1 + v), 255 * (1 + v), 255];
+function color(v, o, i) {   // negativo cian · cero oscuro · positivo magenta, con brillo en picos
+  const t = Math.min(1, Math.abs(v)), k = Math.pow(t, 0.8), g = t > 0.85 ? (t - 0.85) / 0.15 * 90 : 0;
+  const T = v >= 0 ? [255, 60, 150] : [0, 215, 255];
+  o[i] = 5 + (T[0] - 5) * k + g; o[i + 1] = 9 + (T[1] - 9) * k + g; o[i + 2] = 22 + (T[2] - 22) * k + g; o[i + 3] = 255;
 }
 
-// Paredes metálicas con rayado
-function walls(ctx, iw, ih, full) {
-  ctx.fillStyle = "#7b8794";
-  const strips = [[-WALL, -WALL, iw + 2 * WALL, WALL], [-WALL, ih, iw + 2 * WALL, WALL]];
-  if (full) strips.push([-WALL, -WALL, WALL, ih + 2 * WALL], [iw, -WALL, WALL, ih + 2 * WALL]);
-  strips.forEach(s => ctx.fillRect(OX + s[0], OY + s[1], s[2], s[3]));
-  ctx.strokeStyle = "#c5ccd4"; ctx.lineWidth = 1; ctx.beginPath();
-  for (let t = -WALL; t < iw + WALL; t += 7) {
-    ctx.moveTo(OX + t, OY - 1); ctx.lineTo(OX + t - 7, OY - WALL);
-    ctx.moveTo(OX + t, OY + ih + WALL); ctx.lineTo(OX + t - 7, OY + ih);
-  }
-  if (full) for (let t = -WALL; t < ih + WALL; t += 7) {
-    ctx.moveTo(OX - 1, OY + t); ctx.lineTo(OX - WALL, OY + t - 7);
-    ctx.moveTo(OX + iw + WALL, OY + t); ctx.lineTo(OX + iw, OY + t - 7);
-  }
-  ctx.stroke();
-  ctx.strokeStyle = "#444"; ctx.lineWidth = 1.5;
-  ctx.strokeRect(OX, OY, iw, ih);
+function frame(x, ox, oy, w, h, full) {
+  x.save(); x.fillStyle = "#17263d";
+  x.fillRect(ox - WALL, oy - WALL, w + 2 * WALL, WALL); x.fillRect(ox - WALL, oy + h, w + 2 * WALL, WALL);
+  if (full) { x.fillRect(ox - WALL, oy - WALL, WALL, h + 2 * WALL); x.fillRect(ox + w, oy - WALL, WALL, h + 2 * WALL); }
+  x.strokeStyle = "#00e5ff"; x.shadowColor = "#00e5ff"; x.shadowBlur = 10; x.lineWidth = 1.5; x.strokeRect(ox, oy, w, h);
+  x.restore();
 }
-// Cota con flechas y texto
-function dim(ctx, x1, y1, x2, y2, txt, tx, ty, rot) {
+function dim(x, x1, y1, x2, y2, txt, tx, ty, rot) {
   const ang = Math.atan2(y2 - y1, x2 - x1);
-  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  x.strokeStyle = "#5fd3ff"; x.fillStyle = "#9fdfff"; x.lineWidth = 1; x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2);
   [[x2, y2, 0], [x1, y1, Math.PI]].forEach(([px, py, d]) => {
-    ctx.moveTo(px, py); ctx.lineTo(px - 7 * Math.cos(ang + d - 0.4), py - 7 * Math.sin(ang + d - 0.4));
-    ctx.moveTo(px, py); ctx.lineTo(px - 7 * Math.cos(ang + d + 0.4), py - 7 * Math.sin(ang + d + 0.4));
+    x.moveTo(px, py); x.lineTo(px - 7 * Math.cos(ang + d - 0.4), py - 7 * Math.sin(ang + d - 0.4));
+    x.moveTo(px, py); x.lineTo(px - 7 * Math.cos(ang + d + 0.4), py - 7 * Math.sin(ang + d + 0.4));
   });
-  ctx.stroke(); ctx.save(); ctx.translate(tx, ty); if (rot) ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = "center"; ctx.fillText(txt, 0, 0); ctx.restore();
+  x.stroke(); x.save(); x.translate(tx, ty); if (rot) x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText(txt, 0, 0); x.restore();
+}
+function arrows(x, ox, oy, w, h, sz) {
+  const sp = 28; x.save(); x.strokeStyle = "rgba(255,255,255,.88)"; x.shadowColor = "#fff"; x.shadowBlur = 4; x.lineWidth = 1.4;
+  for (let px = sp / 2; px < w; px += sp) for (let py = sp / 2; py < h; py += sp) {
+    const [ex, ey] = evec(px / w * P.a, (1 - py / h) * P.b), dx = ex * sz * sp * 0.45, dy = -ey * sz * sp * 0.45;
+    if (Math.hypot(dx, dy) < 2) continue;
+    const tx = ox + px + dx, ty = oy + py + dy, an = Math.atan2(dy, dx);
+    x.beginPath(); x.moveTo(ox + px - dx, oy + py - dy); x.lineTo(tx, ty);
+    x.lineTo(tx - 5 * Math.cos(an - 0.45), ty - 5 * Math.sin(an - 0.45)); x.moveTo(tx, ty); x.lineTo(tx - 5 * Math.cos(an + 0.45), ty - 5 * Math.sin(an + 0.45)); x.stroke();
+  }
+  x.restore();
+}
+const mm = v => (v * 1000).toFixed(2) + " mm";
+
+function view1(z0, y0) {
+  const c = $("c1"), x = c.getContext("2d"), {iw: w, ih: h, ox} = P;
+  x.clearRect(0, 0, c.width, c.height); x.drawImage(off1, ox, OY);
+  if ($("vec").checked) arrows(x, ox, OY, w, h, Math.sin(phase - P.beta * z0));
+  x.save(); x.setLineDash([6, 4]); x.strokeStyle = "#7cffb2"; x.lineWidth = 1.6;
+  const ly = OY + (1 - y0 / P.b) * h; x.beginPath(); x.moveTo(ox, ly); x.lineTo(ox + w, ly); x.stroke(); x.restore();
+  frame(x, ox, OY, w, h, true); x.font = "12px 'Share Tech Mono',monospace"; x.fillStyle = "#9fdfff";
+  x.textAlign = "left"; x.fillText(`SECCIÓN ${P.type}${P.n}${P.m} · z = z₀`, 10, 18);
+  dim(x, ox, OY + h + 28, ox + w, OY + h + 28, "a = " + mm(P.a), ox + w / 2, OY + h + 46, false);
+  dim(x, ox - 30, OY, ox - 30, OY + h, "b = " + mm(P.b), ox - 38, OY + h / 2, true);
+  const len = [1, 2, 5, 10, 20, 50].find(v => v * P.s >= 40) || 50, bx = CW - 14 - len * P.s;   // barra de escala
+  x.strokeStyle = "#9fdfff"; x.beginPath(); x.moveTo(bx, 24); x.lineTo(bx + len * P.s, 24);
+  x.moveTo(bx, 20); x.lineTo(bx, 28); x.moveTo(bx + len * P.s, 20); x.lineTo(bx + len * P.s, 28); x.stroke();
+  x.textAlign = "center"; x.fillText(len + " mm", bx + len * P.s / 2, 16);
+}
+function view2(z0, y0) {
+  const c = $("c2"), x = c.getContext("2d"), W = LW, H = P.iw, L = 2 * P.lg;
+  x.clearRect(0, 0, c.width, c.height); x.drawImage(off2, LX, OY);
+  x.save(); x.setLineDash([6, 4]); x.strokeStyle = "#ff3c96"; x.lineWidth = 1.6;
+  const lz = LX + z0 / L * W; x.beginPath(); x.moveTo(lz, OY); x.lineTo(lz, OY + H); x.stroke(); x.restore();
+  frame(x, LX, OY, W, H, false); x.font = "12px 'Share Tech Mono',monospace"; x.fillStyle = "#9fdfff";
+  x.textAlign = "left"; x.fillText(`CORTE LONGITUDINAL · y₀ = ${(y0 * 1000).toFixed(2)} mm`, 10, 18);
+  dim(x, LX, OY + H + 28, LX + W, OY + H + 28, "z →  2λg = " + mm(L), LX + W / 2, OY + H + 46, false);
+  dim(x, LX - 30, OY, LX - 30, OY + H, "a = " + mm(P.a), LX - 38, OY + H / 2, true);
+}
+function view3() {
+  const c = $("c3"), x = c.getContext("2d"), H = c.height, y0n = +$("y0").value, z0n = +$("z0").value;
+  x.clearRect(0, 0, c.width, H);
+  const k = Math.min(380 / (P.a * 1000), 120 / (P.b * 1000)), fw = P.a * 1000 * k, fh = P.b * 1000 * k;
+  const ez = [250, -170], O = [40, H - 40], ex = [fw, 0], ey = [0, -fh];
+  const pt = (X, Y, Z) => [O[0] + X * ex[0] + Y * ey[0] + Z * ez[0], O[1] + X * ex[1] + Y * ey[1] + Z * ez[1]];
+  const poly = (pts, col, dash) => { x.save(); x.setLineDash(dash || []); x.strokeStyle = col; x.shadowColor = col; x.shadowBlur = 8; x.lineWidth = 1.5;
+    x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.closePath(); x.stroke(); x.restore(); };
+  poly([pt(0, 1, 1), pt(1, 1, 1), pt(1, 0, 1), pt(0, 0, 1)], "rgba(0,229,255,.45)");      // fondo
+  x.save(); let p = pt(1, y0n, 0);                                                           // plano z–x en y₀
+  x.setTransform(ez[0] / LW, ez[1] / LW, -ex[0] / P.iw, -ex[1] / P.iw, p[0], p[1]); x.drawImage(off2, 0, 0); x.restore();
+  poly([pt(0, y0n, 0), pt(1, y0n, 0), pt(1, y0n, 1), pt(0, y0n, 1)], "#7cffb2", [6, 4]);
+  x.save(); p = pt(0, 1, z0n);                                                               // plano x–y en z₀
+  x.setTransform(ex[0] / P.iw, ex[1] / P.iw, -ey[0] / P.ih, -ey[1] / P.ih, p[0], p[1]); x.drawImage(off1, 0, 0); x.restore();
+  poly([pt(0, 0, z0n), pt(1, 0, z0n), pt(1, 1, z0n), pt(0, 1, z0n)], "#ff3c96");
+  [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([X, Y]) => poly([pt(X, Y, 0), pt(X, Y, 1)], "rgba(0,229,255,.7)"));
+  poly([pt(0, 0, 0), pt(1, 0, 0), pt(1, 1, 0), pt(0, 1, 0)], "#00e5ff");                    // frente
+  x.fillStyle = "#9fdfff"; x.font = "13px 'Share Tech Mono',monospace";
+  let q = pt(1.05, 0, 0); x.fillText("x", q[0], q[1]); q = pt(0, 1.12, 0); x.fillText("y", q[0] - 4, q[1]); q = pt(1, 1, 1.03); x.fillText("z →", q[0] + 6, q[1]);
 }
 
 function draw() {
   if (!P.valid) return;
-  const fg = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#111";
-  const z0 = +$("z0").value * 2 * P.lg, y0 = +$("y0").value * P.b;
-  const mm = v => (v * 1000).toFixed(2) + " mm";
-  // ---------- Sección transversal
-  OX = P.ox1;
-  const c1 = $("c1"), x1 = c1.getContext("2d"), w = P.iw, h = P.ih;
-  x1.clearRect(0, 0, c1.width, c1.height);
-  const img = x1.createImageData(w, h), cz = Math.cos(phase - P.beta * z0);
-  for (let q = 0; q < w * h; q++) {
-    const [r, g, bl] = color(grid[q] * cz);
-    img.data[q * 4] = r; img.data[q * 4 + 1] = g; img.data[q * 4 + 2] = bl; img.data[q * 4 + 3] = 255;
-  }
-  x1.putImageData(img, OX, OY);
-  x1.save(); x1.translate(OX, OY);
-  if ($("vec").checked) {
-    const s = 30, sz = Math.sin(phase - P.beta * z0);
-    x1.strokeStyle = "#111"; x1.lineWidth = 1.4;
-    for (let px = s / 2; px < w; px += s) for (let py = s / 2; py < h; py += s) {
-      const [ex, ey] = evec(px / w * P.a, (1 - py / h) * P.b);
-      const dx = ex * sz * s * 0.45, dy = -ey * sz * s * 0.45;
-      if (Math.hypot(dx, dy) < 2) continue;
-      const tx = px + dx, ty = py + dy, ang = Math.atan2(dy, dx);
-      x1.beginPath(); x1.moveTo(px - dx, py - dy); x1.lineTo(tx, ty);
-      x1.lineTo(tx - 5 * Math.cos(ang - 0.45), ty - 5 * Math.sin(ang - 0.45));
-      x1.moveTo(tx, ty); x1.lineTo(tx - 5 * Math.cos(ang + 0.45), ty - 5 * Math.sin(ang + 0.45));
-      x1.stroke();
-    }
-  }
-  x1.setLineDash([5, 4]); x1.strokeStyle = "#16a34a"; x1.lineWidth = 2;
-  const ly = (1 - y0 / P.b) * h; x1.beginPath(); x1.moveTo(0, ly); x1.lineTo(w, ly); x1.stroke();
-  x1.restore();
-  x1.setLineDash([]); walls(x1, w, h, true);
-  x1.fillStyle = x1.strokeStyle = fg; x1.lineWidth = 1; x1.font = "12px system-ui,sans-serif";
-  x1.textAlign = "left"; x1.fillText(`Sección transversal · ${P.type}${P.n}${P.m} · z = z₀`, 10, 16);
-  dim(x1, OX, OY + h + 28, OX + w, OY + h + 28, "a = " + mm(P.a), OX + w / 2, OY + h + 46, false);
-  dim(x1, OX - 30, OY, OX - 30, OY + h, "b = " + mm(P.b), OX - 36, OY + h / 2, true);
-  x1.textAlign = "left"; x1.fillText("x →  (0,0) esquina inferior izquierda · y ↑", 10, OY + h + 70);
-  const bx = CW1 - 12 - 10 * P.s;  // barra de escala de 10 mm
-  x1.beginPath(); x1.moveTo(bx, 22); x1.lineTo(bx + 10 * P.s, 22);
-  x1.moveTo(bx, 18); x1.lineTo(bx, 26); x1.moveTo(bx + 10 * P.s, 18); x1.lineTo(bx + 10 * P.s, 26); x1.stroke();
-  x1.textAlign = "center"; x1.fillText("10 mm", bx + 5 * P.s, 14);
-  // ---------- Corte longitudinal
-  OX = OX2;
-  const c2 = $("c2"), x2 = c2.getContext("2d"), W = 520, H = P.iw, L = 2 * P.lg;
-  x2.clearRect(0, 0, c2.width, c2.height);
-  const im2 = x2.createImageData(W, H), col = new Float32Array(H);
+  const z0 = +$("z0").value * 2 * P.lg, y0 = +$("y0").value * P.b, w = P.iw, h = P.ih, W = LW, H = P.iw, L = 2 * P.lg;
+  const o1 = off1.getContext("2d"), im1 = o1.createImageData(w, h), cz = Math.cos(phase - P.beta * z0);
+  for (let q = 0; q < w * h; q++) color(grid[q] * cz, im1.data, q * 4);
+  o1.putImageData(im1, 0, 0);
+  const o2 = off2.getContext("2d"), im2 = o2.createImageData(W, H), col = new Float32Array(H);
   for (let j = 0; j < H; j++) col[j] = scalar((1 - (j + 0.5) / H) * P.a, y0);
-  for (let i = 0; i < W; i++) {
-    const cc = Math.cos(phase - P.beta * ((i + 0.5) / W * L));
-    for (let j = 0; j < H; j++) {
-      const [r, g, bl] = color(col[j] * cc), q = (j * W + i) * 4;
-      im2.data[q] = r; im2.data[q + 1] = g; im2.data[q + 2] = bl; im2.data[q + 3] = 255;
-    }
-  }
-  x2.putImageData(im2, OX, OY);
-  x2.save(); x2.translate(OX, OY); x2.setLineDash([5, 4]); x2.strokeStyle = "#16a34a"; x2.lineWidth = 2;
-  const lz = z0 / L * W; x2.beginPath(); x2.moveTo(lz, 0); x2.lineTo(lz, H); x2.stroke(); x2.restore();
-  x2.setLineDash([]); walls(x2, W, H, false);
-  x2.fillStyle = x2.strokeStyle = fg; x2.lineWidth = 1; x2.font = "12px system-ui,sans-serif";
-  x2.textAlign = "left"; x2.fillText(`Corte longitudinal · y = y₀ = ${(y0 * 1000).toFixed(2)} mm · pared x = a (arriba), x = 0 (abajo)`, 10, 16);
-  dim(x2, OX, OY + H + 28, OX + W, OY + H + 28, "z → (2 λg = " + mm(L) + ")", OX + W / 2, OY + H + 46, false);
-  dim(x2, OX - 30, OY, OX - 30, OY + H, "a = " + mm(P.a), OX - 36, OY + H / 2, true);
+  for (let i = 0; i < W; i++) { const cc = Math.cos(phase - P.beta * ((i + 0.5) / W * L)); for (let j = 0; j < H; j++) color(col[j] * cc, im2.data, (j * W + i) * 4); }
+  o2.putImageData(im2, 0, 0);
+  view1(z0, y0); view2(z0, y0); view3();
 }
-
 function loop(t) {
-  const dt = (t - last) / 1000; last = t;
+  const dt = Math.min((t - last) / 1000, 0.1); last = t;
   if (playing) phase += dt * +$("spd").value * 2 * Math.PI;
-  draw(); requestAnimationFrame(loop);
+  try { draw(); } catch (e) { console.error(e); $("err").textContent = "Error al dibujar: " + e.message; }
+  requestAnimationFrame(loop);
 }
-
-$("preset").onchange = e => {
-  const s = e.target.value;
-  $("type").value = s.slice(0, 2); $("n").value = s[2]; $("m").value = s[3]; params();
-};
-["type", "n", "m", "a", "b", "ratio"].forEach(id => $(id).addEventListener("input", params));
-$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pausa" : "Reanudar"; };
-$("preset").dispatchEvent(new Event("change"));
-requestAnimationFrame(loop);
+["type", "n", "m", "a", "b", "ratio", "fit"].forEach(id => $(id).addEventListener("input", params));
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "⏸ PAUSA" : "▶ REANUDAR"; };
+params(); requestAnimationFrame(loop);
