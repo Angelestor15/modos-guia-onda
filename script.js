@@ -4,10 +4,11 @@ const presets = ["TE10","TE21","TM11","TM32","TM21","TE01","TE11","TM12"];
 $("preset").innerHTML = presets.map(p => `<option>${p}</option>`).join("");
 
 let P = {}, phase = 0, playing = true, last = performance.now(), grid = null;
-const OX = 56, OY = 34, WALL = 9;
+let OX = 56;
+const OY = 34, WALL = 9, OX2 = 56, CW1 = 600;
 
 function params() {
-  const a = +$("a").value / 1000, b = +$("b").value / 1000;
+  const a = Math.max(+$("a").value, 1) / 1000, b = Math.max(+$("b").value, 1) / 1000;
   const n = +$("n").value, m = +$("m").value, type = $("type").value;
   const A = n * Math.PI / a, B = m * Math.PI / b;
   const kc = Math.hypot(A, B), fc = C * kc / (2 * Math.PI);
@@ -15,10 +16,12 @@ function params() {
   const beta = Math.sqrt(Math.max(k * k - kc * kc, 1e-9));
   const valid = type === "TE" ? !(n === 0 && m === 0) : (n >= 1 && m >= 1);
   P = {a, b, n, m, type, A, B, kc, fc, f, beta, lg: 2 * Math.PI / beta, valid};
-  const w = 400, h = Math.max(110, Math.round(400 * b / a));
-  P.iw = w; P.ih = h;
-  $("c1").width = OX + w + 34; $("c1").height = OY + h + 84;
-  $("c2").width = OX + 520 + 34; $("c2").height = OY + 200 + 84;
+  // Escala fija en px/mm: al cambiar a o b, el rectángulo cambia de tamaño de verdad
+  const s = Math.min(9, 488 / (a * 1000), 400 / (b * 1000));
+  const w = Math.round(a * 1000 * s), h = Math.round(b * 1000 * s);
+  P.iw = w; P.ih = h; P.s = s; P.ox1 = Math.round((CW1 - w) / 2);
+  $("c1").width = CW1; $("c1").height = OY + h + 84;
+  $("c2").width = OX2 + 520 + 34; $("c2").height = OY + w + 84;
   grid = new Float32Array(w * h);
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++)
     grid[j * w + i] = scalar((i + 0.5) / w * a, (1 - (j + 0.5) / h) * b);
@@ -80,6 +83,7 @@ function draw() {
   const z0 = +$("z0").value * 2 * P.lg, y0 = +$("y0").value * P.b;
   const mm = v => (v * 1000).toFixed(2) + " mm";
   // ---------- Sección transversal
+  OX = P.ox1;
   const c1 = $("c1"), x1 = c1.getContext("2d"), w = P.iw, h = P.ih;
   x1.clearRect(0, 0, c1.width, c1.height);
   const img = x1.createImageData(w, h), cz = Math.cos(phase - P.beta * z0);
@@ -108,12 +112,17 @@ function draw() {
   x1.restore();
   x1.setLineDash([]); walls(x1, w, h, true);
   x1.fillStyle = x1.strokeStyle = fg; x1.lineWidth = 1; x1.font = "12px system-ui,sans-serif";
-  x1.textAlign = "left"; x1.fillText(`Sección transversal · ${P.type}${P.n}${P.m} · z = z₀`, OX - WALL, 16);
+  x1.textAlign = "left"; x1.fillText(`Sección transversal · ${P.type}${P.n}${P.m} · z = z₀`, 10, 16);
   dim(x1, OX, OY + h + 28, OX + w, OY + h + 28, "a = " + mm(P.a), OX + w / 2, OY + h + 46, false);
   dim(x1, OX - 30, OY, OX - 30, OY + h, "b = " + mm(P.b), OX - 36, OY + h / 2, true);
-  x1.textAlign = "left"; x1.fillText("x →  (0,0) esquina inferior izquierda · y ↑", OX - WALL, OY + h + 70);
+  x1.textAlign = "left"; x1.fillText("x →  (0,0) esquina inferior izquierda · y ↑", 10, OY + h + 70);
+  const bx = CW1 - 12 - 10 * P.s;  // barra de escala de 10 mm
+  x1.beginPath(); x1.moveTo(bx, 22); x1.lineTo(bx + 10 * P.s, 22);
+  x1.moveTo(bx, 18); x1.lineTo(bx, 26); x1.moveTo(bx + 10 * P.s, 18); x1.lineTo(bx + 10 * P.s, 26); x1.stroke();
+  x1.textAlign = "center"; x1.fillText("10 mm", bx + 5 * P.s, 14);
   // ---------- Corte longitudinal
-  const c2 = $("c2"), x2 = c2.getContext("2d"), W = 520, H = 200, L = 2 * P.lg;
+  OX = OX2;
+  const c2 = $("c2"), x2 = c2.getContext("2d"), W = 520, H = P.iw, L = 2 * P.lg;
   x2.clearRect(0, 0, c2.width, c2.height);
   const im2 = x2.createImageData(W, H), col = new Float32Array(H);
   for (let j = 0; j < H; j++) col[j] = scalar((1 - (j + 0.5) / H) * P.a, y0);
@@ -129,7 +138,7 @@ function draw() {
   const lz = z0 / L * W; x2.beginPath(); x2.moveTo(lz, 0); x2.lineTo(lz, H); x2.stroke(); x2.restore();
   x2.setLineDash([]); walls(x2, W, H, false);
   x2.fillStyle = x2.strokeStyle = fg; x2.lineWidth = 1; x2.font = "12px system-ui,sans-serif";
-  x2.textAlign = "left"; x2.fillText(`Corte longitudinal · y = y₀ = ${(y0 * 1000).toFixed(2)} mm · pared x = a (arriba), x = 0 (abajo)`, OX - WALL, 16);
+  x2.textAlign = "left"; x2.fillText(`Corte longitudinal · y = y₀ = ${(y0 * 1000).toFixed(2)} mm · pared x = a (arriba), x = 0 (abajo)`, 10, 16);
   dim(x2, OX, OY + H + 28, OX + W, OY + H + 28, "z → (2 λg = " + mm(L) + ")", OX + W / 2, OY + H + 46, false);
   dim(x2, OX - 30, OY, OX - 30, OY + H, "a = " + mm(P.a), OX - 36, OY + H / 2, true);
 }
